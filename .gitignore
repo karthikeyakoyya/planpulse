@@ -1,0 +1,5 @@
+__pycache__/
+.pytest_cache/
+data/planpulse.duckdb
+data/planpulse.duckdb.wal
+.venv/

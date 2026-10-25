@@ -1,0 +1,99 @@
+{
+  "APAC": {
+    "duplicate_inventory_rows": [
+      "AP-DEV-021",
+      "AP-DEV-001"
+    ],
+    "negative_on_hand": [
+      "AP-ACC-014",
+      "AP-NET-023"
+    ],
+    "null_safety_stock": [
+      "AP-DEV-037",
+      "AP-STO-012"
+    ],
+    "null_forecast_rows": 3,
+    "po_promised_before_order": [
+      "PO000001",
+      "PO000002"
+    ],
+    "orphan_po_sku": [
+      "AP-XXX-900",
+      "AP-XXX-901"
+    ],
+    "stale_snapshot_days": 9,
+    "negative_sales_rows": 1
+  },
+  "India": {
+    "duplicate_inventory_rows": [
+      "IN-STO-004",
+      "IN-STO-016"
+    ],
+    "negative_on_hand": [
+      "IN-STO-032",
+      "IN-ACC-034"
+    ],
+    "null_safety_stock": [
+      "IN-DEV-029",
+      "IN-DEV-037"
+    ],
+    "null_forecast_rows": 3,
+    "po_promised_before_order": [
+      "PO000001",
+      "PO000002"
+    ],
+    "orphan_po_sku": [
+      "IN-XXX-900",
+      "IN-XXX-901"
+    ],
+    "negative_sales_rows": 1
+  },
+  "MENA-PAK": {
+    "duplicate_inventory_rows": [
+      "MP-DEV-017",
+      "MP-STO-016"
+    ],
+    "negative_on_hand": [
+      "MP-NET-007",
+      "MP-NET-003"
+    ],
+    "null_safety_stock": [
+      "MP-DEV-001",
+      "MP-NET-011"
+    ],
+    "null_forecast_rows": 3,
+    "po_promised_before_order": [
+      "PO000001",
+      "PO000002"
+    ],
+    "orphan_po_sku": [
+      "MP-XXX-900",
+      "MP-XXX-901"
+    ],
+    "negative_sales_rows": 1
+  },
+  "South Africa": {
+    "duplicate_inventory_rows": [
+      "ZA-STO-016",
+      "ZA-NET-023"
+    ],
+    "negative_on_hand": [
+      "ZA-ACC-026",
+      "ZA-ACC-030"
+    ],
+    "null_safety_stock": [
+      "ZA-DEV-021",
+      "ZA-ACC-006"
+    ],
+    "null_forecast_rows": 3,
+    "po_promised_before_order": [
+      "PO000001",
+      "PO000002"
+    ],
+    "orphan_po_sku": [
+      "ZA-XXX-900",
+      "ZA-XXX-901"
+    ],
+    "negative_sales_rows": 1
+  }
+}

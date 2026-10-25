@@ -1,0 +1,6 @@
+id,gap,where_seen,improvement,effort,status
+G01,No single owner for fixing extract defects before the planning review,Weekly cycle step 2,Name a data steward per market and make DQ actions part of the Monday review,Low,Open
+G02,Past-due POs have no standard rule for assumed arrival date,Supply projection,Agree a rule (for example re-promise date from procurement) and add the field to the PO extract,Medium,Open
+G03,Forecast accuracy is reviewed at market level only,Accuracy review,Review the top 10 SKUs by absolute error per market each week,Low,Open
+G04,Meeting decisions live in notes and are not tracked,Planning meeting,Use the meeting notes template so each decision becomes a tracked action with owner and date,Low,Open
+G05,Escalation path is informal,Overdue actions,Adopt the two-level path in the decision log (market lead, then ISCP lead),Low,Open

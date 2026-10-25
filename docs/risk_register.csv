@@ -1,0 +1,7 @@
+id,rating,risk,likelihood,impact,mitigation,owner_role,status
+R01,High,Stale inventory snapshot makes cover and stockout figures wrong for a market,Medium,High,Freshness check INV_STALE runs every week and raises a P1 data action before KPIs are shared,Data Steward,Open
+R02,High,Past-due POs are excluded from projected receipts so stockout risk is overstated when a late PO actually lands,Medium,Medium,LATE_PO exceptions list every excluded PO with open quantity so the planner can override by hand,Procurement Lead,Open
+R03,Medium,Forecast bias on a high-volume SKU goes unnoticed because WAPE looks acceptable at market level,Medium,High,SKU-level bias exception above 20 percent with a minimum volume filter,Demand Planner,Open
+R04,Medium,LLM drafted summary states a number that is not in the data,Low,High,Draft sees only computed facts; a number check flags unknown figures; a person approves before it is used,Planning Analyst,Mitigated
+R05,Medium,Action owners are roles not names so accountability can blur,Medium,Medium,Map roles to named people in the team tracker before real use,Team lead,Open
+R06,Low,Thresholds (cover days, bias, SLA days) are generic and not tuned to category or market,High,Low,All thresholds live in config.py and the decision log; review with planners before relying on them,Planning Analyst,Open

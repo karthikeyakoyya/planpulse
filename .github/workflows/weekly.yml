@@ -1,0 +1,32 @@
+# Weekly PlanPulse run. NOT yet run on GitHub; written and checked by reading only.
+name: weekly-planpulse
+on:
+  schedule:
+    - cron: "30 2 * * 1"      # Mondays 02:30 UTC
+  workflow_dispatch:
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements.txt
+      - run: python -m pytest -q
+      - name: Restore action tracker database
+        uses: actions/cache@v4
+        with:
+          path: data/planpulse.duckdb
+          key: planpulse-db-${{ github.run_id }}
+          restore-keys: planpulse-db-
+      - name: Simulate this week's extracts and run the cycle
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}   # optional; template draft is used if unset
+        run: |
+          AS_OF=$(date -u -d "today - $(( $(date -u +%u) - 1 )) days" +%F)   # Monday of the current week
+          python -m planpulse simulate --as-of "$AS_OF"
+          python -m planpulse run --as-of "$AS_OF"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: planpulse-outputs
+          path: outputs/
