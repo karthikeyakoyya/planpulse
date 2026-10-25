@@ -8,7 +8,7 @@ A weekly planning-review kit for four markets (APAC, India, MENA-PAK, South Afri
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q                              # 12 tests
+python -m pytest -q                              # 13 tests
 python scripts/demo.py                           # two simulated weeks, writes outputs/
 # or step by step
 python -m planpulse simulate --as-of 2026-10-26
@@ -37,7 +37,7 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 | Data collection, analysis | `simulate.py` produces per-market extracts; DuckDB loads them; 10 SQL data-quality checks in `sql/dq_checks.sql`; KPIs in `sql/03_kpis.sql`; the numbers were cross-checked against an independent pandas recalculation |
 | Documentation, reporting | Word status note, PowerPoint market deck, data dictionary (`docs/data_dictionary.md`) |
 | Basic dashboards | Excel KPI workbook (formulas, not pasted values) and `outputs/dashboard.html` |
-| AI, ML, automation | Scikit-learn baseline forecast, Isolation Forest, Claude-drafted summary with human approval, weekly GitHub Actions workflow |
+| AI, ML, automation | Scikit-learn baseline forecast, Isolation Forest, Claude-drafted summary with human approval, weekly GitHub Actions workflow; next-step ideas in `docs/automation_ideas.md` |
 | Supply chain domain | `docs/glossary.md`: lead time, safety stock, reorder point, days of cover, WAPE, bias, OTIF |
 | Action items and timelines | Tracker with owner role, due date, status, overdue days, escalation level |
 | Meetings and follow-up | Meeting notes template and `meeting` import command |
@@ -56,11 +56,11 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 ## Known limits
 
 - Not run on GitHub yet. `.github/workflows/weekly.yml` is written but untested. The tracker database is kept between weekly runs with `actions/cache`, which is a convenience, not a durable store.
-- The Claude-drafted summary has not been exercised against the live API (no key was available when this was built). Without `ANTHROPIC_API_KEY` it falls back to a template draft. Either way the draft stays `PENDING_APPROVAL` and is excluded from the Word note until a person runs `approve`. A check flags any number in the draft that is not in the computed facts. The model name is set by `PLANPULSE_MODEL` (default `claude-sonnet-5-5`); confirm it against current docs before relying on it.
-- The Mermaid process map has not been rendered here. GitHub renders Mermaid in Markdown, so check it after you push.
+- The Claude-drafted summary has not been exercised against the live API (no key was available when this was built). A test covers the call shape and the fallback with a fake client. Without `ANTHROPIC_API_KEY` it falls back to a template draft. Either way the draft stays `PENDING_APPROVAL` and is excluded from the Word note until a person runs `approve`. A check flags any number in the draft that is not in the computed facts. The model name is set by `PLANPULSE_MODEL` (default `claude-sonnet-5-5`); confirm it against current docs before relying on it.
+- The Mermaid process map parses cleanly with the Mermaid parser (v11) but has not been drawn as an image here. GitHub renders Mermaid in Markdown, so check the layout after you push.
 - Week 2 of the demo keeps demand and master data and redraws the operational state (stock, POs, supply plan), so many week 1 exceptions resolve at once. That is a way to exercise carry-forward and auto-resolution, not a model of real week-to-week change.
 - Owners are roles, not named people. Thresholds are generic; see `docs/decision_log.md`.
-- The Excel file written by the pipeline has no cached values until Excel (or LibreOffice) opens and calculates it. The copy in `outputs/` was recalculated so previewers show numbers.
+- The Excel file written by the pipeline has no cached values until Excel (or LibreOffice) opens and calculates it. The copy in `outputs/` was recalculated with LibreOffice (formulas kept, no errors) so previewers show numbers.
 
 ## Layout
 
@@ -68,7 +68,7 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 planpulse/   simulate, pipeline, ml, actions, narrative, reports, queries, cli
 sql/         dq_checks.sql, 02_clean.sql, 03_kpis.sql, 04_exceptions.sql, queries/
 docs/        glossary, data dictionary, decision log, process map, risk register, gap log, meeting notes
-tests/       12 tests: known-answer KPIs, defect detection, action lifecycle, meeting import, number check
+tests/       13 tests: known-answer KPIs, defect detection, action lifecycle, meeting import, number check, drafted-summary client and fallback
 outputs/     sample weekly outputs (Excel, Word, PowerPoint, HTML dashboard, CSVs, pending draft summary)
 ```
 

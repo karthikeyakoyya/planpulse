@@ -160,3 +160,37 @@ def test_market_accuracy_includes_skus_quarantined_for_stock_data(tmp_path):
         m = m[(m.week_start >= pd.Timestamp(AS_OF) - pd.Timedelta(days=56)) & (m.week_start < pd.Timestamp(AS_OF))]
         expected = (m.forecast_units - m.units).abs().sum() / m.units.sum()
         assert wape == pytest.approx(expected)
+
+
+def test_claude_draft_uses_client_and_falls_back(monkeypatch):
+    """No live API in tests: a fake client checks the call shape, a failing one checks the template fallback."""
+    import sys
+    import types
+
+    facts = {"as_of": AS_OF, "open_actions": 3, "overdue_actions": 1, "escalated_l2": 0,
+             "markets": {"APAC": dict(wape_pct=16.0, bias_pct=1.0, avg_days_cover=40.0, high_stockout_risk_skus=2, late_pos=1,
+                                      otif_pct=70.0, p1_exceptions=1, total_exceptions=4, top_p1=[])}}
+    calls = []
+
+    class FakeMessages:
+        def create(self, **kw):
+            calls.append(kw)
+            block = types.SimpleNamespace(type="text", text="Simulated data. APAC WAPE was 16.0%.")
+            return types.SimpleNamespace(content=[block])
+
+    fake = types.SimpleNamespace(Anthropic=lambda api_key: types.SimpleNamespace(messages=FakeMessages()))
+    monkeypatch.setitem(sys.modules, "anthropic", fake)
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+    text = narrative.claude_draft(facts)
+    assert text == "Simulated data. APAC WAPE was 16.0%."
+    assert calls[0]["model"] == narrative.MODEL and "FACTS" in calls[0]["messages"][0]["content"]
+    assert narrative.numbers_not_in_facts(text, facts) == []
+
+    class Boom:
+        def create(self, **kw):
+            raise RuntimeError("network down")
+
+    boom = types.SimpleNamespace(Anthropic=lambda api_key: types.SimpleNamespace(messages=Boom()))
+    monkeypatch.setitem(sys.modules, "anthropic", boom)
+    assert narrative.claude_draft(facts) is None          # caller then uses template_draft
+    assert "Simulated data" in narrative.template_draft(facts)
