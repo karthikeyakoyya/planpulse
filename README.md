@@ -8,7 +8,7 @@ A weekly planning-review kit for four markets (APAC, India, MENA-PAK, South Afri
 
 ```bash
 pip install -r requirements.txt
-python -m pytest -q                              # 13 tests
+python -m pytest -q                              # 14 tests
 python scripts/demo.py                           # two simulated weeks, writes outputs/
 # or step by step
 python -m planpulse simulate --as-of 2026-10-26
@@ -28,6 +28,15 @@ python -m planpulse query actions --overdue-only
 python -m planpulse query --sql "select market, count(*) from kpi_sku group by 1"   # read-only SELECT only
 ```
 
+Ask in plain words. The assistant can only call the saved queries above, never write SQL or change the tracker:
+
+```bash
+python -m planpulse ask "which SKUs run out in the next 3 weeks in India"
+python -m planpulse ask "show overdue actions in APAC"
+```
+
+With `ANTHROPIC_API_KEY` set, a model chooses the queries and writes the answer, and every number in it is checked against the rows it saw. Without a key, a keyword router picks one saved query, so the command works offline.
+
 Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.md`, write `- ACTION: ... | owner: ... | due: YYYY-MM-DD | market: ...` lines, then `python -m planpulse meeting notes.md --date 2026-10-26`.
 
 ## What it does against the role
@@ -37,7 +46,7 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 | Data collection, analysis | `simulate.py` produces per-market extracts; DuckDB loads them; 10 SQL data-quality checks in `sql/dq_checks.sql`; KPIs in `sql/03_kpis.sql`; the numbers were cross-checked against an independent pandas recalculation |
 | Documentation, reporting | Word status note, PowerPoint market deck, data dictionary (`docs/data_dictionary.md`) |
 | Basic dashboards | Excel KPI workbook (formulas, not pasted values) and `outputs/dashboard.html` |
-| AI, ML, automation | Scikit-learn baseline forecast, Isolation Forest, Claude-drafted summary with human approval, weekly GitHub Actions workflow; next-step ideas in `docs/automation_ideas.md` |
+| AI, ML, automation | Scikit-learn baseline forecast, Isolation Forest, Claude-drafted summary with human approval, a question-answering assistant over the saved queries (tool-use loop, offline fallback), weekly GitHub Actions workflow; next-step ideas in `docs/automation_ideas.md` |
 | Supply chain domain | `docs/glossary.md`: lead time, safety stock, reorder point, days of cover, WAPE, bias, OTIF |
 | Action items and timelines | Tracker with owner role, due date, status, overdue days, escalation level |
 | Meetings and follow-up | Meeting notes template and `meeting` import command |
@@ -56,7 +65,7 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 ## Known limits
 
 - Not run on GitHub yet. `.github/workflows/weekly.yml` is written but untested. The tracker database is kept between weekly runs with `actions/cache`, which is a convenience, not a durable store.
-- The Claude-drafted summary has not been exercised against the live API (no key was available when this was built). A test covers the call shape and the fallback with a fake client. Without `ANTHROPIC_API_KEY` it falls back to a template draft. Either way the draft stays `PENDING_APPROVAL` and is excluded from the Word note until a person runs `approve`. A check flags any number in the draft that is not in the computed facts. The model name is set by `PLANPULSE_MODEL` (default `claude-sonnet-5-5`); confirm it against current docs before relying on it.
+- The Claude-drafted summary has not been exercised against the live API (no key was available when this was built). Tests cover the call shape, the tool-use loop (including a refused unknown query) and the fallbacks with fake clients, so the real SDK response shape is the untested part. Without `ANTHROPIC_API_KEY` it falls back to a template draft. Either way the draft stays `PENDING_APPROVAL` and is excluded from the Word note until a person runs `approve`. A check flags any number in the draft that is not in the computed facts. The model name is set by `PLANPULSE_MODEL` (default `claude-sonnet-5-5`); confirm it against current docs before relying on it.
 - The Mermaid process map parses cleanly with the Mermaid parser (v11) but has not been drawn as an image here. GitHub renders Mermaid in Markdown, so check the layout after you push.
 - Week 2 of the demo keeps demand and master data and redraws the operational state (stock, POs, supply plan), so many week 1 exceptions resolve at once. That is a way to exercise carry-forward and auto-resolution, not a model of real week-to-week change.
 - Owners are roles, not named people. Thresholds are generic; see `docs/decision_log.md`.
@@ -65,10 +74,10 @@ Turn meeting decisions into tracked actions: copy `docs/meeting_notes_template.m
 ## Layout
 
 ```
-planpulse/   simulate, pipeline, ml, actions, narrative, reports, queries, cli
+planpulse/   simulate, pipeline, ml, actions, narrative, assistant, reports, queries, cli
 sql/         dq_checks.sql, 02_clean.sql, 03_kpis.sql, 04_exceptions.sql, queries/
 docs/        glossary, data dictionary, decision log, process map, risk register, gap log, meeting notes
-tests/       13 tests: known-answer KPIs, defect detection, action lifecycle, meeting import, number check, drafted-summary client and fallback
+tests/       14 tests: known-answer KPIs, defect detection, action lifecycle, meeting import, number check, drafted-summary client and fallback, assistant router and tool loop
 outputs/     sample weekly outputs (Excel, Word, PowerPoint, HTML dashboard, CSVs, pending draft summary)
 ```
 

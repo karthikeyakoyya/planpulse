@@ -6,7 +6,7 @@ import pandas as pd
 
 from . import actions as A
 from . import config as C
-from . import ml, narrative, pipeline, queries, reports, simulate
+from . import assistant, ml, narrative, pipeline, queries, reports, simulate
 
 
 def run_week(as_of: str, raw_dir=C.DATA_RAW, db=C.DB_PATH, out_dir=C.OUT_DIR, quiet=False):
@@ -50,6 +50,9 @@ def main(argv=None):
     q.add_argument("--status"); q.add_argument("--overdue-only", action="store_true")
     q.add_argument("--sql", help="free read-only SELECT instead of a named query")
 
+    k = sub.add_parser("ask", help="ask a question; answered from the saved read-only queries")
+    k.add_argument("question")
+
     u = sub.add_parser("action", help="update an action")
     u.add_argument("action_id"); u.add_argument("--status", choices=A.STATES); u.add_argument("--note")
     u.add_argument("--on", default=date.today().isoformat(), help="date of the update, default today")
@@ -80,6 +83,14 @@ def main(argv=None):
             df = queries.run(args.name, params)
         with pd.option_context("display.width", 200, "display.max_columns", 30):
             print(df.to_string(index=False) if len(df) else "(no rows)")
+    elif args.cmd == "ask":
+        con = pipeline.connect(read_only=True)
+        ans = assistant.ask(args.question, con)
+        con.close()
+        print(ans.text)
+        print(f"\n[source: {ans.source}; queries: {[(n, p, r) for n, p, r in ans.trace]}]")
+        if ans.unmatched_numbers:
+            print(f"[check: numbers not found in the returned rows: {ans.unmatched_numbers}]")
     elif args.cmd == "action":
         con = pipeline.connect()
         A.update_action(con, args.action_id, args.status, args.note, args.on)

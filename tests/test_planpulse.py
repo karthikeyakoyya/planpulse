@@ -194,3 +194,48 @@ def test_claude_draft_uses_client_and_falls_back(monkeypatch):
     monkeypatch.setitem(sys.modules, "anthropic", boom)
     assert narrative.claude_draft(facts) is None          # caller then uses template_draft
     assert "Simulated data" in narrative.template_draft(facts)
+
+
+def test_assistant_router_and_tool_loop(tiny):
+    """Offline router picks a saved query; the model loop only runs saved queries and checks its numbers."""
+    import types
+
+    from planpulse import assistant
+
+    # router: no client -> keyword routing, parameters pulled from the sentence
+    assert assistant.route("which SKUs run out in the next 3 weeks in India") == ("stockout", {"market": "India", "weeks": 3})
+    assert assistant.route("show overdue actions") == ("actions", {"overdue_only": True})
+    assert assistant.route("tell me a joke") is None
+    ans = assistant.ask("which SKUs have under 30 days of cover", tiny, client=None)
+    assert "T-1" in ans.text and ans.trace[0][0] == "cover" and ans.trace[0][1]["max_days"] == 30
+
+    # model loop with a fake client: unknown query is refused, a real one returns rows, final text is number-checked
+    sent = []
+
+    def block(**kw):
+        return types.SimpleNamespace(**kw)
+
+    script = [
+        types.SimpleNamespace(stop_reason="tool_use", content=[block(type="tool_use", id="t1", name="run_saved_query", input={"name": "drop_everything"})]),
+        types.SimpleNamespace(stop_reason="tool_use", content=[block(type="tool_use", id="t2", name="run_saved_query", input={"name": "cover", "max_days": 30})]),
+        types.SimpleNamespace(stop_reason="end_turn", content=[block(type="text", text="Simulated data. Query cover: T-1 has 14.0 days of cover and 99 units are missing.")]),
+    ]
+
+    class Fake:
+        def __init__(self):
+            self.messages = self
+
+        def create(self, **kw):
+            sent.append(kw["messages"][-1])
+            return script[len(sent) - 1]
+
+    ans = assistant.ask("what is low on cover", tiny, client=Fake())
+    assert ans.source.startswith("claude:") and [t[0] for t in ans.trace] == ["cover"]
+    assert "unknown query" in sent[1]["content"][0]["content"] and "T-1" in sent[2]["content"][0]["content"]
+    assert ans.unmatched_numbers == ["99"]            # 14.0 and 30 are in the rows or the question; 99 is not
+
+    class Boom:
+        messages = types.SimpleNamespace(create=lambda **kw: (_ for _ in ()).throw(RuntimeError("down")))
+
+    ans = assistant.ask("which SKUs have under 30 days of cover", tiny, client=Boom())
+    assert "model call failed" in ans.source and "T-1" in ans.text
